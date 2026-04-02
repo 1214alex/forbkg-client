@@ -1,38 +1,349 @@
-.App {
+/* 1. 기본 배경 및 폰트 */
+body {
+  background-color: #ebedef;
+  color: #333;
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. 네비게이션 바 */
+.dak-nav {
+  background-color: #1c1c1c;
+  padding: 15px 0;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.logo {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ffc107;
+  margin-left: 20px;
+}
+
+.logo small {
+  color: #777;
+  font-weight: normal;
+  margin-left: 8px;
+  font-size: 0.8rem;
+}
+
+/* 3. 검색창 섹션 */
+.dak-search-form {
+  display: flex;
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.dak-search-form input {
+  flex: 1;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1rem;
+  outline: none;
+}
+
+.dak-search-form button {
+  background: #ffc107;
+  border: none;
+  padding: 0 35px;
+  font-weight: bold;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dak-search-form button:hover {
+  background: #e0a800;
+}
+
+/* 4. 매치 카드 레이아웃 */
+.match-card {
+  background: #fff;
+  border: 1px solid #d6d3d3;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.match-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  cursor: pointer;
+  min-height: 60px;
+}
+
+.match-bar:hover {
+  background-color: #f8f9fa;
+}
+
+/* 🚨 저격수 발견 시 강조 */
+.match-bar.has-sniper {
+  background-color: #fff5f5;
+  border-left: 6px solid #d31a45;
+}
+
+/* 5. 순위 뱃지 및 매치 정보 */
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 280px;
+}
+
+.rank-badge {
+  min-width: 50px;
+  text-align: center;
+  background: #f1f3f5;
+  padding: 8px 5px;
+  border-radius: 6px;
+}
+
+.rank-val {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #495057;
+}
+
+/* 🍗 1등(치킨) 효과 */
+.rank-val.winner {
+  color: #f39c12; /* 황금색 */
+  text-shadow: 0 0 5px rgba(243, 156, 18, 0.3);
+}
+
+.match-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.map-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* 6. 킬 수 및 아이콘 */
+.bar-mid {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+}
+
+.kill-label {
+  color: #bbb;
+  font-size: 0.8rem;
+  margin-right: 8px;
+}
+
+.kill-val {
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.chicken-icon {
+  margin-left: 10px;
+  font-size: 1.2rem;
+}
+
+/* 7. 상세 교전 (아코디언) */
+.match-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #fafafa;
+}
+
+.match-details.show {
+  max-height: 1000px;
+  border-top: 1px solid #eee;
+}
+
+.encounter-content {
+  padding: 20px;
+}
+
+.enc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  margin-bottom: 6px;
+  background: #fff;
+  border: 1px solid #efefef;
+  border-radius: 4px;
+}
+
+.enc-row.detected {
+  background-color: #fff0f0 !important;
+  border: 1.5px solid #ffcaca !important;
+}
+
+.player-name {
+  font-weight: bold;
+  min-width: 160px;
+  font-size: 0.9rem;
+}
+
+.sniper-name { color: #d31a45 !important; }
+
+.action-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 3px;
+  min-width: 45px;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.action-tag.KILL { background: #eef2ff; color: #4171d6; }
+.action-tag.DEATH { background: #fff1f2; color: #d31a45; }
+
+.weapon-name {
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 600;
+  margin-left: 15px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.distance {
+  font-size: 0.85rem;
+  color: #999;
+  font-family: 'Consolas', monospace;
+  font-weight: bold;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+/* 8. 저격 경고 애니메이션 */
+.sniper-alert {
+  background: #d31a45;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
-.App-link {
-  color: #61dafb;
+.pulse {
+  animation: pulse-red 1.5s infinite;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(211, 26, 69, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(211, 26, 69, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(211, 26, 69, 0); }
+}
+
+.arrow-icon {
+  transition: transform 0.3s;
+  color: #ccc;
+}
+
+.arrow-icon.up { transform: rotate(180deg); color: #333; }
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+  /* 🚨 매치 바: 저격 팀원 발견 시 (주황색 경고) */
+.match-bar.has-sniper-team {
+  background-color: #fff9f2;
+  border-left: 6px solid #fd7e14;
+}
+
+/* ⚠️ 저격 일당 알림 뱃지 */
+.sniper-team-alert {
+  background: #fd7e14;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* --- 상세 교전 내역 행(Row) 스타일 --- */
+/* 저격수 본인 교전 (강렬한 빨강) */
+.enc-row.detected {
+  background-color: #fff0f0 !important;
+  border: 1.5px solid #ffcaca !important;
+}
+
+/* 저격수 팀원 교전 (경고성 주황) */
+.enc-row.team-detected {
+  background-color: #fff4e6 !important;
+  border: 1.5px solid #ffe8cc !important;
+}
+
+/* 텍스트 조립용 스타일 */
+.victim-name {
+  font-weight: 800;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.vs-text {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0 5px;
+}
+
+.player-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+/* 닉네임 강조색 */
+.sniper-name { color: #d31a45 !important; text-decoration: underline; }
+.sniper-team-name { color: #d35400 !important; }
+
+/* 작은 애니메이션 뱃지 */
+.pulse-small {
+  animation: pulse-red 1.5s infinite;
+}
+
+.sniper-team-badge {
+  background: #fd7e14;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: 12px;
+}
+
+
+.sniper-badge {
+  background: #d31a45;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: 12px;
+}
+
+/* 무기 이름에 괄호 디자인 포함 */
+.weapon-name {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+  margin-left: 10px;
+  background-color: #f1f3f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
