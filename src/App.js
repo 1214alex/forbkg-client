@@ -1,7 +1,139 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import axios from 'axios';
 import './App.css';
 
+// ----------------------------------------------------------------------
+// ✅ 1. 헬퍼 함수 분리 (컴포넌트 밖으로 빼서 불필요한 재생성 방지)
+// ----------------------------------------------------------------------
+const getActionText = (action) => {
+  switch(action) {
+    case 'KILL': return '확정킬';
+    case 'DEATH': return '사망';
+    case 'KNOCK': return '기절시킴';
+    case 'KNOCKED': return '기절당함';
+    case 'TEAM_KILL': return '팀킬(사망)';
+    case 'TEAM_KNOCK': return '팀킬(기절)';
+    default: return action;
+  }
+};
+
+const renderBadge = (type) => {
+  if (type === 'SNIPER') return <span className="sniper-badge pulse-small">🚨 저격 본인</span>;
+  if (type === 'STREAMER') return <span className="streamer-badge">🎥 방송인</span>;
+  if (type === 'SNIPER_TEAM') return <span className="sniper-team-badge">⚠️ 저격팀원</span>;
+  if (type === 'STREAMER_TEAM') return <span className="streamer-team-badge" style={{ backgroundColor: '#69b1ff', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '10px', marginLeft: '5px' }}>👥 방송인팀</span>;
+  return null;
+};
+
+// ----------------------------------------------------------------------
+// ✅ 2. 자식 컴포넌트 분리 (React.memo를 씌워서 렌더링 방어)
+// ----------------------------------------------------------------------
+const MatchCard = React.memo(({ match, safeNickname, isOpen, onToggle, onQuickSearch }) => {
+  const hasSniper = match.encounters?.some(enc => enc.sniperType === 'SNIPER');
+  const hasStreamer = match.encounters?.some(enc => enc.sniperType === 'STREAMER');
+  const hasSniperTeam = match.encounters?.some(enc => enc.sniperType === 'SNIPER_TEAM');
+  const hasStreamerTeam = match.encounters?.some(enc => enc.sniperType === 'STREAMER_TEAM');
+  
+  let matchBarClass = 'match-bar';
+  if (hasSniper) matchBarClass += ' has-sniper';
+  else if (hasStreamer) matchBarClass += ' has-streamer';
+  else if (hasSniperTeam) matchBarClass += ' has-sniper-team';
+  else if (hasStreamerTeam) matchBarClass += ' has-streamer-team';
+
+  return (
+    <div className={`match-card mb-2 ${isOpen ? 'active' : ''}`}>
+      <div className={matchBarClass} onClick={() => onToggle(match.matchId)}>
+        <div className="bar-left">
+          <div className="rank-badge">
+            <span className={(match.myRank || match.rank) === 1 ? 'rank-val winner' : 'rank-val'}>
+              #{(match.myRank || match.rank) || '?'}
+            </span>
+          </div>
+          <div className="match-info">
+            <span className="map-name">{match.mapName}</span>
+            <span className="time">{match.matchDate}</span>
+          </div>
+        </div>
+        
+        <div className="bar-mid">
+          <span className="kill-label">MY KILLS</span> 
+          <span className="kill-val">{match.myKills}</span>
+          {(match.myRank || match.rank) === 1 && <span className="chicken-icon">🍗</span>}
+        </div>
+
+        <div className="bar-right">
+          {hasSniper && <span className="sniper-alert pulse">🚨 저격 검거</span>}
+          {hasStreamer && !hasSniper && <span className="streamer-alert">🎥 방송인 매치</span>}
+          {hasSniperTeam && !hasSniper && !hasStreamer && <span className="sniper-team-alert">⚠️ 저격팀 감지</span>}
+          {hasStreamerTeam && !hasSniper && !hasStreamer && !hasSniperTeam && <span className="streamer-team-alert" style={{ background: '#69b1ff', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>👥 방송인팀 매치</span>}
+          <span className={`arrow-icon ms-2 ${isOpen ? 'up' : 'down'}`}>▼</span>
+        </div>
+      </div>
+
+      <div className={`match-details ${isOpen ? 'show' : ''}`}>
+        <div className="encounter-content">
+          {match.encounters && match.encounters.length > 0 ? (
+            match.encounters.map((enc, i) => {
+              const killerName = enc.killerName || enc.attacker || "";
+              const victimName = enc.victimName || enc.victim || "";
+
+              const isMeAttacker = killerName.toLowerCase() === safeNickname;
+              const isMeVictim = victimName.toLowerCase() === safeNickname;
+
+              const isMyTeamAction = enc.action === 'KILL' || enc.action === 'KNOCK' || enc.action === 'TEAM_KILL' || enc.action === 'TEAM_KNOCK';
+
+              const myTeamEntity = isMyTeamAction 
+                  ? (isMeAttacker ? '나' : `팀원(${killerName})`) 
+                  : (isMeVictim ? '나' : `팀원(${victimName})`);
+              
+              const enemyEntity = isMyTeamAction ? victimName : killerName;
+
+              let rowClass = 'enc-row';
+              if (enc.sniperType === 'SNIPER') rowClass += ' detected';
+              else if (enc.sniperType === 'STREAMER') rowClass += ' streamer-detected';
+
+              return (
+                <div key={i} className={rowClass}>
+                  <div className="enc-main">
+                    <span className="victim-name">{myTeamEntity}</span>
+                    <span className="vs-text">님이</span>
+                    
+                    <span 
+                      className={`player-name clickable ${enc.sniperType === 'SNIPER' ? 'sniper-name' : enc.sniperType === 'STREAMER' ? 'streamer-name' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation(); // 클릭 시 아코디언 닫히는 현상 방지
+                        onQuickSearch(enemyEntity);
+                      }}
+                    >
+                      {enemyEntity}
+                    </span>
+                    {renderBadge(enc.sniperType)}
+
+                    <span className="vs-text">{isMyTeamAction ? '을(를)' : '에게'}</span>
+                    
+                    <span className={`action-tag action-${enc.action.toLowerCase()}`}>
+                      {getActionText(enc.action)}
+                    </span>
+                    <span className="weapon-name">[{enc.weapon || '주먹/차량'}]</span>
+                  </div>
+                  <div className="enc-sub">
+                    <span className="distance">{Math.round(enc.distance || 0)}m</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="no-data">우리 팀과 저격수/방송인 간의 직접적인 교전이 없습니다.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ----------------------------------------------------------------------
+// ✅ 3. 부모 컴포넌트 (상태 관리 중심)
+// ----------------------------------------------------------------------
 function App() {
   const [nickname, setNickname] = useState('');
   const [result, setResult] = useState(null);
@@ -10,16 +142,22 @@ function App() {
   const [offset, setOffset] = useState(0);
   const LIMIT = 5;
 
-  const handleSearch = async (e, isMore = false) => {
+  // const API_BASE_URL = 'http://localhost:8080/api/sniper/analyze';
+  const API_BASE_URL = `${process.env.REACT_APP_API_BASE_URL}/api/sniper/analyze`;
+
+
+
+  // 검색 로직
+  const handleSearch = async (e, isMore = false, targetName = nickname) => {
     if (e) e.preventDefault();
-    if (!nickname) return;
+    if (!targetName) return;
 
     setLoading(true);
     const nextOffset = isMore ? offset + LIMIT : 0;
 
     try {
-          const response = await axios.get(
-        `https://sniper-service-1047111187894.asia-northeast3.run.app/api/sniper/analyze/${nickname}?offset=${nextOffset}&limit=${LIMIT}`
+      const response = await axios.get(
+        `${API_BASE_URL}/${targetName}?offset=${nextOffset}&limit=${LIMIT}`
       );
       const data = response.data;
 
@@ -31,32 +169,43 @@ function App() {
       } else {
         setResult(data);
         setOpenMatches({});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       setOffset(nextOffset);
     } catch (error) {
       console.error("데이터 로드 실패:", error);
-      alert("백엔드 서버와 통신할 수 없습니다. 서버 실행 상태를 확인하세요!");
+      alert("데이터 로드 실패! 서버 상태나 닉네임 대소문자를 확인하세요.");
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleMatch = (matchId) => {
+  // ✅ useCallback으로 함수 재생성 방지 (자식 컴포넌트 리렌더링 방어막)
+  const handleQuickSearch = useCallback((name) => {
+    setNickname(name);
+    handleSearch(null, false, name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offset, nickname]); 
+
+  const toggleMatch = useCallback((matchId) => {
     setOpenMatches(prev => ({ ...prev, [matchId]: !prev[matchId] }));
-  };
+  }, []);
 
   return (
     <div className="dak-container">
       <nav className="dak-nav">
         <div className="container">
-          <span className="logo">🎯 PUBG.SNIPER <small>Team Radar</small></span>
+          <span className="logo" onClick={() => window.location.reload()} style={{cursor:'pointer'}}>
+            🎯 PUBG <small>Team Radar</small>
+          </span>
         </div>
       </nav>
 
       <div className="container mt-5">
         <div className="search-section text-center mb-5">
-          <h1 className="fw-bold mb-3">저격수 & 일당 검거 리포트</h1>
-          <p className="text-muted">나와 우리 팀을 노린 저격수와 그 팀원들의 교전 기록을 전수조사합니다.</p>
+          <h1 className="fw-bold mb-3">저격러 & 팀원 검거</h1>
+          <p className="text-muted">나와 우리 팀을 노린 저격수와 방송인, 그 팀원들의 교전 기록을 분석.</p>
+          
           <form onSubmit={(e) => handleSearch(e, false)} className="dak-search-form mt-4 shadow-sm">
             <input 
               type="text" 
@@ -67,105 +216,29 @@ function App() {
             <button type="submit" disabled={loading}>
               {loading && !offset ? '분석 중...' : '조회하기'}
             </button>
-          </form>
+          </form> 
         </div>
 
         {result && result.matchHistory && (
           <div className="history-section animate-fade-in">
             <div className="user-profile mb-4">
-              <span className="name">{result.targetPlayer}</span>
-              <span className="status-tag">누적 {result.matchHistory.length}경기 분석됨</span>
+              <span className="name">{result.nickname || result.targetPlayer}</span>
+              <span className="status-tag">최근 {result.matchHistory.length}경기 분석됨</span>
             </div>
 
             {result.matchHistory.length > 0 ? (
-              result.matchHistory.map((match, idx) => {
-                // 🚨 매치 내에 저격수 본인 혹은 저격수 팀원이 있는지 체크
-                const hasSniper = match.encounters?.some(enc => enc.sniperType === 'SNIPER');
-                const hasSniperTeam = match.encounters?.some(enc => enc.sniperType === 'SNIPER_TEAM');
-                const isAlertMatch = hasSniper || hasSniperTeam;
-                const isOpen = !!openMatches[match.matchId];
-
+              result.matchHistory.map((match) => {
+                const safeNickname = (result.nickname || result.targetPlayer || "").toLowerCase();
+                
                 return (
-                  <div key={`${match.matchId}-${idx}`} className={`match-card mb-2 ${isOpen ? 'active' : ''}`}>
-                    {/* 매치 요약 바 */}
-                    <div 
-                      className={`match-bar ${hasSniper ? 'has-sniper' : hasSniperTeam ? 'has-sniper-team' : ''}`} 
-                      onClick={() => toggleMatch(match.matchId)}
-                    >
-                      <div className="bar-left">
-                        <div className="rank-badge">
-                          <span className={match.rank === 1 ? 'rank-val winner' : 'rank-val'}>
-                            #{match.rank || '?'}
-                          </span>
-                        </div>
-                        <div className="match-info">
-                          <span className="map-name">{match.mapName}</span>
-                          <span className="time">{match.matchDate}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="bar-mid">
-                        <span className="kill-label">MY KILLS</span> 
-                        <span className="kill-val">{match.myKills}</span>
-                        {match.rank === 1 && <span className="chicken-icon">🍗</span>}
-                      </div>
-
-                      <div className="bar-right">
-                        {hasSniper && <span className="sniper-alert pulse">🚨 저격 본인 검거</span>}
-                        {!hasSniper && hasSniperTeam && <span className="sniper-team-alert">⚠️ 저격 일당 색출</span>}
-                        <span className={`arrow-icon ms-2 ${isOpen ? 'up' : 'down'}`}>▼</span>
-                      </div>
-                    </div>
-
-                    {/* 상세 교전 내역 (아코디언) */}
-                    <div className={`match-details ${isOpen ? 'show' : ''}`}>
-                      <div className="encounter-content">
-                        {match.encounters && match.encounters.length > 0 ? (
-                          match.encounters.map((enc, i) => {
-                            const isSniperKill = enc.sniperType === 'SNIPER';
-                            const isSniperTeamKill = enc.sniperType === 'SNIPER_TEAM';
-                            
-                            // 내가 주체인지 팀원이 주체인지 판단
-                            const isMeAttacker = enc.attacker.toLowerCase() === nickname.toLowerCase();
-                            const isMeVictim = enc.victim.toLowerCase() === nickname.toLowerCase();
-
-                            // 텍스트 조립
-                            const myTeamEntity = enc.action === 'KILL' 
-                                ? (isMeAttacker ? '나' : `팀원(${enc.attacker})`) 
-                                : (isMeVictim ? '나' : `팀원(${enc.victim})`);
-                            
-                            const enemyEntity = enc.action === 'KILL' ? enc.victim : enc.attacker;
-
-                            return (
-                              <div key={i} className={`enc-row ${isSniperKill ? 'detected' : isSniperTeamKill ? 'team-detected' : ''}`}>
-                                <div className="enc-main">
-                                  <span className="victim-name">{myTeamEntity}</span>
-                                  <span className="vs-text">님이</span>
-                                  
-                                  <span className={`player-name ${isSniperKill ? 'sniper-name' : isSniperTeamKill ? 'sniper-team-name' : ''}`}>
-                                    {enemyEntity}
-                                  </span>
-                                  <span className="vs-text">{enc.action === 'KILL' ? '을(를)' : '에게'}</span>
-                                  
-                                  <span className={`action-tag ${enc.action}`}>
-                                    {enc.action === 'KILL' ? '처치' : '사망'}
-                                  </span>
-                                  <span className="weapon-name">[{enc.weapon}]</span>
-                                </div>
-                                <div className="enc-sub">
-                                  <span className="distance">{Math.round(enc.distance)}m</span>
-                                  {isSniperKill && <span className="sniper-badge pulse-small">🚨 저격 본인</span>}
-                                  {isSniperTeamKill && <span className="sniper-team-badge">⚠️ 저격팀원</span>}
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="no-data">우리 팀과 저격수 간의 직접적인 교전이 없습니다.</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <MatchCard 
+                    key={match.matchId}
+                    match={match}
+                    safeNickname={safeNickname}
+                    isOpen={!!openMatches[match.matchId]}
+                    onToggle={toggleMatch}
+                    onQuickSearch={handleQuickSearch}
+                  />
                 );
               })
             ) : (
@@ -174,7 +247,7 @@ function App() {
 
             <div className="text-center mt-4 mb-5">
               <button className="btn-load-more" onClick={() => handleSearch(null, true)} disabled={loading}>
-                {loading ? '데이터 불러오는 중...' : '다음 5경기 더 보기'}
+                {loading ? '불러오는 중...' : '다음 5경기 더 보기'}
               </button>
             </div>
           </div>

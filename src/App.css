@@ -198,17 +198,19 @@ body {
 
 .sniper-name { color: #d31a45 !important; }
 
-.action-tag {
-  font-size: 0.75rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 3px;
-  min-width: 45px;
-  text-align: center;
+/* ✅ 액션 태그 공통 & 개별 스타일 */
+.action-tag { 
+  font-weight: bold; 
+  margin: 0 5px; 
+  padding: 2px 6px; 
+  border-radius: 4px; 
+  font-size: 11px; 
 }
 
-.action-tag.KILL { background: #eef2ff; color: #4171d6; }
-.action-tag.DEATH { background: #fff1f2; color: #d31a45; }
+.action-kill { color: #fff; background-color: #e74c3c; }        /* 확정킬: 빨간색 */
+.action-death { color: #fff; background-color: #7f8c8d; }       /* 사망: 회색 (어두움) */
+.action-knock { color: #fff; background-color: #f39c12; }       /* 기절시킴: 주황색 */
+.action-knocked { color: #fff; background-color: #9b59b6; }     /* 기절당함: 보라색 */
 
 .weapon-name {
   font-size: 0.9rem;
@@ -346,4 +348,26 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 방송인 전용 스타일 */
+.has-streamer { border-left: 5px solid #1890ff !important; background-color: #f0f7ff !important; }
+.has-streamer-team { border-left: 5px solid #69b1ff !important; }
+
+.streamer-alert { background: #1890ff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.streamer-badge { background: #1890ff; color: white; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px; }
+
+.streamer-name { color: #1890ff !important; font-weight: bold; text-decoration: underline; }
+.streamer-detected { background-color: rgba(24, 144, 255, 0.05); } /* 행 배경색 아주 연하게 */
+
+/* 클릭 가능한 닉네임 호버 효과 */
+.clickable { transition: opacity 0.2s ease-in-out; }
+.clickable:hover { opacity: 0.7; cursor: pointer; }
+
+/* 애니메이션 */
+.pulse-small { animation: pulse 2s infinite; }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
